@@ -25,7 +25,7 @@ The LLL-exact kit was also reviewed independently. The optimized path keeps nati
 | Default LLL with exact verification | 0.1841 ms | 0.0989 ms | 0.0699 ms |
 | Reduction only (`verify = false`) | 0.0406 ms | 0.0415 ms | 0.0694 ms |
 
-The default path is therefore about **1.86× faster** than the baseline, while the reduction-only row is essentially unchanged. This confirms that the main improvement lies in verification overhead rather than in the reduction algorithm itself. The new suite adds **536 exact-certificate assertions** and brings the complete test count to **4,645,990**.
+The default path is therefore about **1.86× faster** than the baseline, while the reduction-only row is essentially unchanged. This confirms that the main improvement lies in verification overhead rather than in the reduction algorithm itself. Native C++ `LLL(det2,B,U)` does not perform Julia's independent exact post-verification, so the default row is an end-to-end API-cost comparison rather than a same-layer algorithm benchmark. For the reduction layer, use `verify = false` versus native C++ LLL. The optional `cpp_checked.cpp` verifier is a separate custom checker and is not part of upstream C++ NTL timing. The new suite adds **536 exact-certificate assertions** and brings the complete test count to **4,645,990**.
 
 ## Selective optimization in 0.13.2
 
