@@ -1,0 +1,44 @@
+Test Summary:                |    Pass    Total   Time
+NTL single-word prime fields | 4276366  4276366  29.2s
+Test Summary:                        |  Pass  Total  Time
+Arbitrary-precision modular integers | 57276  57276  0.8s
+Test Summary:                                         | Pass  Total  Time
+Primality, random integers, and integer factorization |   48     48  0.8s
+Test Summary:                                                       | Pass  Total  Time
+CRT, modular square roots, discrete logarithms, and primitive roots |  303    303  0.9s
+Test Summary:               | Pass  Total   Time
+Dense polynomial arithmetic |  162    162  12.0s
+Test Summary:                     | Pass  Total  Time
+Buffered polynomial long division | 1560   1560  4.9s
+Test Summary:                               | Pass  Total   Time
+Polynomial factorization and irreducibility |   97     97  11.9s
+Test Summary:           | Pass  Total  Time
+GF2 and bit-packed GF2X |   52     52  2.1s
+Test Summary:                     | Pass  Total  Time
+Prime and binary extension fields |   58     58  5.6s
+Test Summary:                        | Pass  Total  Time
+Exact matrices over supported fields |   36     36  5.8s
+Test Summary:                                         | Pass  Total  Time
+Delayed prime-field determinant and overflow fallback |  135    135  2.8s
+Test Summary:               | Pass  Total  Time
+Exact LLL lattice reduction |   13     13  0.1s
+Test Summary:       | Pass  Total  Time
+NTT and convolution |   20     20  0.6s
+Test Summary:                          | Pass  Total  Time
+Polynomial multiplication acceleration |   95     95  0.2s
+Test Summary:                                      | Pass  Total  Time
+Generalized FFT convolution and CRT reconstruction |   29     29  5.0s
+Test Summary:                    | Pass  Total  Time
+Fast LLL with exact verification |   23     23  0.0s
+Test Summary:             | Pass  Total  Time
+Zech extension arithmetic |  562    562  3.2s
+Test Summary:                 | Pass  Total  Time
+Elliptic-curve point counting |    8      8  5.0s
+Test Summary:                             | Pass  Total  Time
+Canonical public names and legacy cleanup |   17     17  0.0s
+Test Summary:                                    | Pass  Total  Time
+Optimized field, polynomial, and lattice kernels | 1987   1987  6.5s
+Test Summary:                              |   Pass   Total   Time
+Small-modulus arithmetic and factorization | 306588  306588  16.5s
+Test Summary:                     | Pass  Total  Time
+PrimeField finite-field iteration |   15     15  0.3s

@@ -22,18 +22,23 @@ function record(fn::Function, io, name, package, backend, note)
     flush(io)
 end
 
+# Specialize once on the field chosen at runtime, before entering the loop.
+function affine_chain(a::T, b::T, iterations::Int) where {T<:PrimeField}
+    c = one(a)
+    for _ in 1:iterations
+        c *= a
+        c += b
+    end
+    c
+end
+
 open(OUTPUT, "w") do io
     println(io, "workload,package,backend,ms,checksum,trials,note")
 
     F = PrimeField(1000000007)
     a, b = F(123456789), F(987654321)
     record(io, "small_modmul", "NTL.jl", "PrimeField", "1e6 mul+add; input construction excluded") do
-        c = one(F)
-        for _ in 1:1000000
-            c *= a
-            c += b
-        end
-        string(rep(c))
+        string(rep(affine_chain(a, b, 1_000_000)))
     end
 
     n = big(2)^521 - 1

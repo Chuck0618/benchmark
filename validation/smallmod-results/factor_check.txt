@@ -1,0 +1,2 @@
+Test Summary:                 | Pass  Total   Time
+factor and affine equivalence | 2252   2252  27.1s
