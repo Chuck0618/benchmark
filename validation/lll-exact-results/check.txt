@@ -1,0 +1,2 @@
+Test Summary:                           |   Pass   Total  Time
+small residues and reduction boundaries | 305816  305816  3.7s

@@ -1,40 +1,43 @@
 #!/usr/bin/env bash
-# Usage: bash replay.sh ORIGINAL_NTL PATCHED_NTL ORIGINAL_BENCH PATCHED_BENCH NEW_RESULTS
 set -euo pipefail
+# Usage: bash replay.sh BASE_JULIA_REPO PATCHED_JULIA_REPO BENCH_REPO OUTPUT
 here=$(cd "$(dirname "$0")" && pwd)
-base=$1
-opt=$2
-bench=$3
-typed=$4
-out=$5
-mkdir -p "$out"
+base=$(cd "$1" && pwd)
+opt=$(cd "$2" && pwd)
+bench=$(cd "$3" && pwd)
+mkdir -p "$4"
+out=$(cd "$4" && pwd)
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
 julia=${JULIA:-julia}
-compiler=${CXX:-g++}
-flags=(-O3 -march=native -std=c++17)
+cxx=${CXX:-g++}
+pin=()
+if [[ -n ${BENCH_CPU:-} ]]; then pin=(taskset -c "$BENCH_CPU"); fi
+flags=(-O3 -DNDEBUG -std=c++17)
 if [[ -n ${NTL_INCLUDE_DIR:-} ]]; then flags+=(-I"$NTL_INCLUDE_DIR"); fi
 libs=("${NTL_ARCHIVE:--lntl}" -l:libgmp.so.10 -pthread)
-runner=()
-if [[ -n ${BENCH_CPU:-} ]]; then runner=(taskset -c "$BENCH_CPU"); fi
-run() { "${runner[@]}" "$@"; }
-for src in benchmark workloads; do
-    "$compiler" "${flags[@]}" "$bench/$src.cpp" "${libs[@]}" -o "$out/$src"
+python3 "$here/slice.py" "$bench" "$tmpdir"
+"$cxx" "${flags[@]}" "$tmpdir/work.cpp" "${libs[@]}" -o "$tmpdir/native"
+"$cxx" "${flags[@]}" "$here/cpp_basis.cpp" "${libs[@]}" -o "$tmpdir/cert"
+"$tmpdir/cert" "$out/cpp-basis.txt"
+runjl() { "${pin[@]}" "$julia" --startup-file=no --threads=1 --project="$1" "${@:2}"; }
+for r in 1 2 3; do
+    order=(base opt)
+    if [[ $r == 2 ]]; then order=(opt base); fi
+    "${pin[@]}" "$tmpdir/native" "$out/cpp-$r.csv"
+    for tag in "${order[@]}"; do
+        if [[ $tag == base ]]; then dir=$base; else dir=$opt; fi
+        runjl "$dir" "$tmpdir/work.jl" "$out/$tag-$r.csv"
+    done
 done
-run "$out/benchmark" "$here/smallmod-primes.csv" "$out/cpp.csv"
-run "$out/workloads" "$out/cpp-workloads.csv"
-"$compiler" "${flags[@]}" "$here/precon.cpp" "${libs[@]}" -o "$out/precon"
-run "$out/precon" > "$out/precon.txt"
-for label in base opt; do
-    project=$base
-    [[ $label != opt ]] || project=$opt
-    jl=("$julia" --startup-file=no --threads=1 --project="$project")
-    run "${jl[@]}" "$bench/scalars.jl" "$here/smallmod-primes.csv" "$out/$label.csv"
-    run "${jl[@]}" "$bench/workloads_ntl.jl" "$out/$label-original.csv"
-    run "${jl[@]}" "$typed/workloads_ntl.jl" "$out/$label-typed.csv"
-    run "${jl[@]}" "$bench/typed_examples.jl" > "$out/$label-affine.txt"
-    run "${jl[@]}" "$here/factor_demo.jl" > "$out/$label-factor.csv"
+for tag in base opt; do
+    if [[ $tag == base ]]; then dir=$base; else dir=$opt; fi
+    runjl "$dir" "$here/bench.jl" > "$out/$tag.csv"
 done
-for script in examples fixed_multiplier check factor_check; do
-    run "$julia" --project="$opt" "$here/$script.jl" > "$out/$script.txt"
+runjl "$opt" "$here/check.jl" "$out/cpp-basis.txt" > "$out/check.txt"
+"$cxx" "${flags[@]}" "$here/cpp_checked.cpp" "${libs[@]}" -o "$tmpdir/cpp-checked"
+"${pin[@]}" "$tmpdir/cpp-checked" > "$out/cpp-checked.csv"
+for tag in base opt; do
+    if [[ $tag == base ]]; then dir=$base; else dir=$opt; fi
+    runjl "$dir" "$here/sizes.jl" > "$out/$tag-sizes.csv"
 done
-run "$julia" --project="$opt" "$opt/test/runtests.jl" > "$out/full-suite.txt"
-python3 "$here/verify.py" "$out"

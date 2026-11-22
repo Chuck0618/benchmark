@@ -1,20 +1,31 @@
-# NTL.jl Performance Report — 0.13.2
+# NTL.jl Performance Report — 0.13.3
 
 ## Scope and validation environment
 
-This report evaluates the uploaded optimization kit against the current NTL.jl baseline. It uses **NTL.jl 0.13.2**, **GaloisFields.jl 1.4**, and **C++ NTL 11.4.2** on the 2-core Intel Xeon Gold 6267C server with Julia 1.11.7. All measurements are single-threaded and run sequentially. Values are medians of 31 runs after warm-up unless otherwise stated; input construction is excluded.
+This report evaluates the uploaded optimization kit against the current NTL.jl baseline. It uses **NTL.jl 0.13.3**, **GaloisFields.jl 1.4**, and **C++ NTL 11.4.2** on the 2-core Intel Xeon Gold 6267C server with Julia 1.11.7. All measurements are single-threaded and run sequentially. Values are medians of 31 runs after warm-up unless otherwise stated; input construction is excluded.
 
 The C++ comparison therefore uses **11.4.2**, not the 11.5.1 version cited in the uploaded kit. Hardware and library versions are not mixed when interpreting the ratios.
 
 ### Correctness checks completed
 
-- Full NTL.jl test suite: **4,645,454 passing assertions**, including **1,987 new optimized-kernel assertions**.
+- Full NTL.jl test suite: **4,645,990 passing assertions**, including **1,987 new optimized-kernel assertions**.
 - All **14 package examples** passed on the optimized server build.
 - **306,588** additional small-modulus arithmetic and factorization checks passed, including exhaustive monic quartics over \(\mathbb F_2\) and \(\mathbb F_3\).
 - **112** filtered NTL.jl/C++ random-prime scalar groups match exactly.
 - All directly comparable C++ package-workload checksums match; LLL additionally passes transformation, unimodular-determinant, size-reduction, and Lovász checks.
 - **40** directly comparable random-small-prime NTL.jl/GaloisFields checksum pairs match. Zech results are checked against ordinary extension-field arithmetic from the same element.
 - Independent BigInt expansion of the complete 200,000-step operand sequence agrees with both implementations.
+
+## LLL verification optimization in 0.13.3
+
+The LLL-exact kit was also reviewed independently. The optimized path keeps native `Int` candidates through verification and converts them to `BigInt` only for the public return value. Fixed-width checks are used only when dimensions and magnitudes make the arithmetic provably safe; other inputs use the generic BigInt verifier. A conversion-order regression was found and fixed so that oversized `A` reaches the fallback instead of throwing `InexactError`.
+
+| LLL workload | 0.13.2 baseline | 0.13.3 optimized | C++ NTL |
+|---|---:|---:|---:|
+| Default LLL with exact verification | 0.1841 ms | 0.0989 ms | 0.0699 ms |
+| Reduction only (`verify = false`) | 0.0406 ms | 0.0415 ms | 0.0694 ms |
+
+The default path is therefore about **1.86× faster** than the baseline, while the reduction-only row is essentially unchanged. This confirms that the main improvement lies in verification overhead rather than in the reduction algorithm itself. The new suite adds **536 exact-certificate assertions** and brings the complete test count to **4,645,990**.
 
 ## Selective optimization in 0.13.2
 

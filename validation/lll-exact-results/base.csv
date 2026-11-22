@@ -1,0 +1,7 @@
+stage,median_us,q25_us,q75_us,bytes
+public_verified,188.033,183.834,193.017,55568
+public_reduce_only,35.421,33.953,37.113,28136
+reference_transform,40.925,40.626,42.792,1464
+reference_det,41.282,40.382,42.379,9584
+reference_gram,52.683,51.333,54.256,7128
+reference_verify,150.681,149.012,153.035,27432

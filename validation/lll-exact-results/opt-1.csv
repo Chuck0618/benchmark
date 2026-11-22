@@ -1,0 +1,3 @@
+workload,package,backend,ms,checksum,trials,note
+lll,NTL.jl,fast LLL + exact verification,0.129433,verified,31,12x12; includes exact post-verification
+lll_reduce_only,NTL.jl,fast LLL without exact verification,0.04062,exact-verification-disabled,31,12x12; verify=false; structural identities checked outside timing

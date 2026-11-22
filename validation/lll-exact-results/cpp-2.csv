@@ -1,0 +1,3 @@
+workload,package,backend,ms,checksum,trials,note
+lll,C++ NTL,NTL_LLL,0.06986700,38775788043632640000,31,12x12; native LLL; no separate Julia-style verification
+lll_reduce_only,C++ NTL,NTL_LLL,0.06977300,38775788043632640000,31,12x12; same native call used for reduction-only comparison
