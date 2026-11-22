@@ -1,0 +1,3 @@
+typed_separate_ms=5.814736
+typed_fused_ms=5.785768999999999
+scratch_add_ms=4.296534

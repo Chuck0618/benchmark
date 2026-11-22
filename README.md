@@ -1,206 +1,178 @@
-# Random-Prime Scalar Performance Comparison
+# NTL.jl Performance Report — 0.13.0
 
-## Scope and reproducibility
+## Scope and validation environment
 
-This report compares **NTL.jl 0.12.0**, **GaloisFields.jl 1.4**, and **C++ NTL 11.4.2** on identical randomly generated prime fields. It also reruns the complete package-level workload tables from the project README, including polynomial, matrix, lattice, number-theory, fused-muladd, and Zech-extension workloads. The server is a 2-core Intel Xeon Gold 6267C environment running Julia 1.11.7. Measurements are single-threaded and were run sequentially rather than concurrently.
+This report evaluates the uploaded optimization kit against the current NTL.jl baseline. It uses **NTL.jl 0.13.0**, **GaloisFields.jl 1.4**, and **C++ NTL 11.4.2** on the 2-core Intel Xeon Gold 6267C server with Julia 1.11.7. All measurements are single-threaded and run sequentially. Values are medians of 31 runs after warm-up unless otherwise stated; input construction is excluded.
 
-- Prime sizes: **8, 16, 24, 31, 32, 48, 63, 64, 96, 127, 128, 256, 512, and 1024 bits**.
-- Two independently generated random primes per bit size, for **28 prime cases** total.
-- Every generated integer has the requested exact bit length and passed `ProbPrime(p; rounds=32)`.
-- Operand sequences are deterministic functions of the random modulus and the operand index; they are identical across all three implementations.
-- Addition and multiplication: 200,000 operations per run, median of 7 runs.
-- Inversion: 3,000 dependent inversions per run, median of 5 runs.
-- Power: 1,000 powers with the fixed exponent 1,234,567,890,123,456,789, median of 5 runs.
-- Field construction, JIT compilation, and input generation are outside the timed regions.
-- Each table entry is the median of the two per-prime medians for that bit size.
+The C++ comparison therefore uses **11.4.2**, not the 11.5.1 version cited in the uploaded kit. Hardware and library versions are not mixed when interpreting the ratios.
 
-## Backend boundaries
+### Correctness checks completed
 
-| Bit range | NTL.jl | GaloisFields.jl | C++ NTL |
-|---|---|---|---|
-| Up to 60 bits | `PrimeField` | Signed machine-word `PrimeField` | `zz_p` |
-| 63 bits | `PrimeField` | `Int64` `PrimeField` | `ZZ_p` in this build |
-| 64–127 bits | `BigModRing` | `Int128` `PrimeField` | `ZZ_p` |
-| 128 bits and above | `BigModRing` | Unsupported | `ZZ_p` |
+- Full NTL.jl test suite: **4,338,862 passing assertions**, including **1,987 new optimized-kernel assertions**.
+- All **14 package examples** passed on the optimized server build.
+- **112** filtered NTL.jl/C++ random-prime scalar groups match exactly.
+- All directly comparable C++ package-workload checksums match; LLL additionally passes transformation, unimodular-determinant, size-reduction, and Lovász checks.
+- **40** directly comparable random-small-prime NTL.jl/GaloisFields checksum pairs match. Zech results are checked against ordinary extension-field arithmetic from the same element.
+- Independent BigInt expansion of the complete 200,000-step operand sequence agrees with both implementations.
 
-The C++ build uses NTL's default 60-bit single-precision modulus limit. It therefore switches to `ZZ_p` for the 63-bit cases. GaloisFields uses increasingly wide signed integer storage and supports prime moduli through signed `Int128`; its 128-bit-and-above entries are marked **unsupported**, not slow.
+## Package-level C++ NTL comparison
 
-## Correctness verification
+| Operation | C++ NTL (ms) | 0.12.0 baseline (ms) | 0.13.0 optimized (ms) | Optimized / C++ |
+|---|---:|---:|---:|---:|
+| Small modular mul/add | 8.4191 | 65.2180 | 70.4097 | 8.36x |
+| BigInt modular exponentiation | 0.0129 | 0.0224 | 0.0046 | 0.36x |
+| Polynomial multiplication | 0.0654 | 0.2609 | 0.0671 | 1.03x |
+| NTT convolution | 0.6519 | 1.0235 | 0.5717 | 0.88x |
+| Polynomial factorization | 0.0257 | 0.6673 | 0.0751 | 2.92x |
+| Finite-field determinant | 0.0299 | 0.0373 | 0.0146 | 0.49x |
+| LLL (with exact verification) | 0.0704 | 1.7875 | 0.1794 | 2.55x |
+| LLL (reduction only) | 0.0693 | 0.2674 | 0.0278 | 0.40x |
+| Primality test (per call) | 0.0690 | 0.0258 | 0.0258 | 0.37x |
 
-There are **112 comparable bit-size / prime / operation groups**. The final checksums of NTL.jl, GaloisFields.jl, and C++ NTL agree in every group, with **zero mismatches**. The raw files also retain every unsupported GaloisFields row explicitly. The expanded package workloads also have matching checksums wherever the representations are directly comparable. LLL uses structural verification, and Zech results are checked against NTL.jl ordinary extension arithmetic rather than compared as representation-specific display strings.
+The primality row is normalized per call from the 200-call workload. C++ uses 16 Miller–Rabin rounds, while NTL.jl uses its deterministic signed-`Int` witnesses. LLL separates NTL.jl's exact post-verification from reduction-only timing; the C++ side is the same native call in both rows.
 
-## Results
+### Interpretation
 
-Bold values mark the fastest supported implementation in each row. Addition, multiplication, and inversion use ns/op; powering uses µs/op because of the fixed 61-bit exponent.
+- The packed polynomial implementation is close to C++ NTL for degree-999 multiplication, and the DIF/DIT convolution is faster than C++ NTL in the measured 4096-coefficient workload.
+- Determinant and LLL reduction-only are faster than C++ NTL in this environment. Default LLL still spends additional time on exact verification.
+- `small_modmul` did not improve in this run: 65.218 ms at baseline versus 70.410 ms optimized. An independent replay gave 66.963 ms, so there is no meaningful scalar improvement to advertise for that loop.
+- Typed hot-loop examples clarify the separate dispatch-boundary issue: separate mul/add measured 5.815 ms at baseline and 5.088 ms optimized; fused muladd measured 5.786 ms at baseline and 4.381 ms optimized. These are different call patterns from the original 66–70 ms loop and should not be conflated with it.
+- Factorization improved substantially but is still 2.92× slower than C++ NTL. The result is meaningful progress, not parity across every algorithm.
 
-### ADD (ns/op)
+## Random small-prime GaloisFields comparison
 
-| Bits | NTL.jl | GaloisFields.jl | C++ NTL |
-|---:|---:|---:|---:|
-| 8 | 41.45 | 33.75 | **1.011** |
-| 16 | 32.89 | 34.06 | **1.020** |
-| 24 | 34.10 | 35.11 | **1.012** |
-| 31 | 33.02 | 37.61 | **1.003** |
-| 32 | 33.05 | 33.97 | **1.004** |
-| 48 | 33.08 | 34.64 | **1.003** |
-| 63 | 33.24 | 34.19 | **21.64** |
-| 64 | 219.3 | 81.22 | **22.85** |
-| 96 | 236.3 | 102.0 | **20.60** |
-| 127 | 266.3 | 75.84 | **22.72** |
-| 128 | 225.8 | unsupported | **23.06** |
-| 256 | 284.2 | unsupported | **27.50** |
-| 512 | 302.3 | unsupported | **36.48** |
-| 1024 | 575.3 | unsupported | **55.51** |
-
-### MUL (ns/op)
-
-| Bits | NTL.jl | GaloisFields.jl | C++ NTL |
-|---:|---:|---:|---:|
-| 8 | 36.85 | 36.17 | **7.337** |
-| 16 | 35.05 | 34.17 | **7.338** |
-| 24 | 35.39 | 35.43 | **7.359** |
-| 31 | 33.71 | 46.18 | **7.368** |
-| 32 | 42.89 | 42.65 | **7.342** |
-| 48 | 67.92 | 64.01 | **7.405** |
-| 63 | 67.98 | **62.47** | 79.60 |
-| 64 | 227.4 | **77.83** | 78.63 |
-| 96 | 330.2 | **90.11** | 90.14 |
-| 127 | 333.2 | 346.6 | **129.1** |
-| 128 | 314.2 | unsupported | **129.8** |
-| 256 | 338.7 | unsupported | **270.7** |
-| 512 | 741.2 | unsupported | **707.5** |
-| 1024 | **1092.1** | unsupported | 2062.3 |
-
-### INV (ns/op)
-
-| Bits | NTL.jl | GaloisFields.jl | C++ NTL |
-|---:|---:|---:|---:|
-| 8 | 27.67 | **27.61** | 51.10 |
-| 16 | 27.77 | **27.45** | 50.06 |
-| 24 | 28.04 | **27.57** | 52.08 |
-| 31 | 27.97 | **27.62** | 50.06 |
-| 32 | 28.15 | **27.90** | 50.05 |
-| 48 | 43.00 | **41.52** | 50.05 |
-| 63 | 43.02 | **41.29** | 338.1 |
-| 64 | 487.4 | **54.99** | 325.7 |
-| 96 | 729.8 | **85.65** | 325.0 |
-| 127 | 787.3 | **74.34** | 343.4 |
-| 128 | 847.6 | unsupported | **345.2** |
-| 256 | 829.0 | unsupported | **436.1** |
-| 512 | 898.6 | unsupported | **553.5** |
-| 1024 | 1124.1 | unsupported | **791.2** |
-
-### POW (µs/op)
-
-| Bits | NTL.jl | GaloisFields.jl | C++ NTL |
-|---:|---:|---:|---:|
-| 8 | **0.287** | 0.329 | 0.551 |
-| 16 | **0.286** | 0.290 | 0.555 |
-| 24 | 0.291 | **0.291** | 0.546 |
-| 31 | 0.313 | **0.294** | 0.547 |
-| 32 | 0.954 | 1.033 | **0.543** |
-| 48 | 2.842 | 2.866 | **0.548** |
-| 63 | **2.843** | 2.860 | 3.863 |
-| 64 | 25.93 | **3.494** | 3.770 |
-| 96 | 35.19 | 4.757 | **3.551** |
-| 127 | 35.98 | 26.24 | **5.387** |
-| 128 | 36.59 | unsupported | **5.118** |
-| 256 | 37.95 | unsupported | **11.88** |
-| 512 | 46.38 | unsupported | **32.08** |
-| 1024 | 127.2 | unsupported | **107.5** |
-
-## Package-level C++ NTL workloads
-
-These are the complete workload categories from the project README, rerun on 2026-11-22 with NTL.jl 0.12.0 and C++ NTL 11.4.2. Input construction is excluded. NTL.jl runs in a process that loads only NTL.jl, and every value is the median of 31 runs after warm-up.
-
-| Operation | C++ NTL (ms) | NTL.jl (ms) | NTL.jl / C++ |
-|---|---:|---:|---:|
-| Small modular mul/add | 8.4664 | 68.6621 | 8.11x |
-| BigInt modular exponentiation | 0.0130 | 0.0243 | 1.87x |
-| Polynomial multiplication | 0.0655 | 0.2717 | 4.15x |
-| NTT convolution | 0.6629 | 1.0280 | 1.55x |
-| Polynomial factorization | 0.0277 | 0.6428 | 23.18x |
-| Finite-field determinant | 0.0303 | 0.0373 | 1.23x |
-| LLL (with exact verification) | 0.0697 | 1.8148 | 26.03x |
-| LLL (reduction only) | 0.0691 | 0.3160 | 4.58x |
-| Primality test (per call) | 0.0697 | 0.0308 | 0.44x |
-
-The primality row is normalized per call from the 200-call workload. The LLL rows deliberately separate NTL.jl's default exact post-verification from `verify = false`; the C++ side is the same native call in both rows. Factor reconstruction and Julia-side LLL structural checks are performed outside the timed regions.
-
-## Package-level GaloisFields workloads
-
-These are the complete NTL.jl-versus-GaloisFields workload categories from the README, including fused muladd, Zech extension arithmetic, and degree-999 polynomial multiplication. Both packages are loaded in the same Julia process, with input construction excluded and 31 runs per prime.
-
-The former fixed p=101 comparison has been replaced by **eight random 7-bit primes**, used identically for both packages and every workload: `[67, 73, 83, 89, 97, 101, 107, 113]`. Zech tests use random quadratic extensions over these primes, with `p^2` below the current table limit. Each per-prime time is the median of 31 runs; the median columns below are taken across the eight per-prime medians.
+The fixed p=101 comparison was replaced by **eight random 7-bit primes** used identically for every workload and both packages: `[67, 73, 83, 89, 97, 101, 107, 113]`. Zech tests use random quadratic extensions over these primes, with `p^2` below the current table limit. Each per-prime time is the median of 31 runs; the median columns below are taken across the eight per-prime medians.
 
 | Operation | NTL.jl median | GaloisFields median | NTL.jl min–max | GaloisFields min–max |
 |---|---:|---:|---:|---:|
-| Prime-field mul/add x1e6 | 69.2760 | 71.2422 | 62.9542–73.4098 | 68.8795–76.4092 |
-| Prime-field fused muladd x1e6 | 10.7357 | 15.0006 | 10.0032–11.1767 | 14.2623–16.8343 |
-| Prime-field power x10000 | 0.3870 | 0.4293 | 0.3764–0.4274 | 0.4234–0.5415 |
-| Prime-field inverse x10000 | 0.2384 | 0.2315 | 0.1614–0.2443 | 0.1389–0.2400 |
-| Zech extension ops x10000 | 0.4958 | 0.8573 | 0.4914–0.5295 | 0.8028–1.4651 |
-| Zech muladd x10000 | 0.6014 | 0.8584 | 0.5894–0.6656 | 0.8100–0.9019 |
-| Zech inverse x10000 | 0.3816 | 0.4565 | 0.3718–0.4753 | 0.4467–0.5124 |
-| Zech power x10000 | 0.4852 | 0.3799 | 0.4813–0.7756 | 0.3772–0.3843 |
-| Polynomial multiplication, deg 999 | 0.2839 | 6.5600 | 0.2759–0.2982 | 5.3571–7.9150 |
+| Prime-field mul/add x1e6 | 69.9130 | 72.0840 | 67.8461–74.4842 | 68.7637–74.5095 |
+| Prime-field fused muladd x1e6 | 9.9001 | 14.9645 | 9.6332–10.6711 | 13.7398–16.6379 |
+| Prime-field power x10000 | 0.3935 | 0.4288 | 0.3224–0.4694 | 0.4263–0.5498 |
+| Prime-field inverse x10000 | 0.2408 | 0.2339 | 0.1626–0.2451 | 0.1389–0.2367 |
+| Zech extension ops x10000 | 0.5010 | 0.8568 | 0.4960–0.5286 | 0.8187–0.9232 |
+| Zech muladd x10000 | 0.5971 | 0.8385 | 0.5905–0.6085 | 0.8089–0.8993 |
+| Zech inverse x10000 | 0.3940 | 0.4656 | 0.3751–0.4525 | 0.4491–0.5151 |
+| Zech power x10000 | 0.4858 | 0.3820 | 0.4217–0.5118 | 0.3791–0.4126 |
+| Polynomial multiplication, deg 999 | 0.0649 | 6.5789 | 0.0623–0.0668 | 5.7308–7.8592 |
 
-All 40 directly comparable random-prime prime-field / polynomial checksum pairs match. Zech display strings are not compared across representations; instead, every NTL.jl Zech result is checked against ordinary extension-field arithmetic starting from the same element.
+NTL.jl's Zech results are checked against ordinary extension-field arithmetic before timing. Display strings are not used as cross-package checksums for extension elements because their representations differ. Prime-field and polynomial results have matching checksums.
 
-## Interpretation
+## Random-prime scalar results
 
-1. **Small machine-word primes:** NTL.jl and GaloisFields are generally close for addition, multiplication, inversion, and powering. C++ NTL leads most addition and multiplication rows, while the two Julia implementations are faster in the repeated-inversion loop. The power ordering varies with bit size. These are workload-specific results, not a universal ranking.
-2. **64–127 bits:** GaloisFields' `Int128` representation gives particularly strong addition and inversion performance. NTL.jl's `BigModRing` pays for `BigInt` allocation and reduction; multiplication is more competitive, including at 127 bits, but C++ NTL remains faster in that case.
-3. **128 bits and above:** only NTL.jl and C++ NTL remain in this comparison. NTL.jl's large-integer multiplication becomes relatively stronger as the modulus grows. At 1024 bits, the measured multiplication rate is **1092.1 ns/op for NTL.jl versus 2062.3 ns/op for C++ NTL**. Addition, inversion, and most powering cases still favor C++ NTL.
-4. **Backend changes matter:** some ratios change at 63/64 bits because the implementations switch storage strategies at different thresholds. They should not be interpreted as a discontinuity in the underlying mathematical operation alone.
+These tables use the same two random primes per bit size and the same deterministic operand formula across implementations. Addition and multiplication use 200,000 operations per run, inversion uses 3,000 dependent inversions, and powering uses 1,000 powers with the fixed exponent 1,234,567,890,123,456,789. Addition and multiplication use medians of 7 runs; inversion and power use medians of 5 runs. Each entry is the median of the two per-prime medians. Bold values mark the faster implementation.
 
-## Optimization implications
+### ADD (ns/op)
 
-- `BigModRing` addition and subtraction are obvious targets: avoiding a full `BigInt` division/modulo after every operation should reduce the large gap in addition.
-- The typed auxiliary-NTT work in NTL.jl 0.11.0 is consistent with the relatively strong large-modulus multiplication result; further gains would require profiling allocation and reduction inside `BigInt` arithmetic.
-- Prime-field addition and powering still have substantial room relative to C++ NTL in the tested loops.
-- Polynomial, matrix, factorization, and lattice workloads are outside this scalar benchmark and should retain their own separate measurements.
+| Bits | NTL.jl 0.13.0 | C++ NTL |
+|---:|---:|---:|
+| 8 | 1.343 | **1.005** |
+| 16 | 1.622 | **1.008** |
+| 24 | 1.425 | **1.028** |
+| 31 | 1.622 | **1.003** |
+| 32 | 1.622 | **1.005** |
+| 48 | 1.514 | **1.006** |
+| 63 | **1.541** | 21.89 |
+| 64 | 147.4 | **23.20** |
+| 96 | 89.21 | **20.75** |
+| 127 | 89.74 | **22.94** |
+| 128 | 134.7 | **22.81** |
+| 256 | 137.3 | **29.52** |
+| 512 | 141.3 | **37.20** |
+| 1024 | 237.6 | **55.64** |
+
+### MUL (ns/op)
+
+| Bits | NTL.jl 0.13.0 | C++ NTL |
+|---:|---:|---:|
+| 8 | **4.581** | 7.285 |
+| 16 | **4.075** | 7.310 |
+| 24 | **4.044** | 7.261 |
+| 31 | **5.063** | 7.297 |
+| 32 | **4.553** | 7.313 |
+| 48 | **6.186** | 7.437 |
+| 63 | **5.801** | 76.79 |
+| 64 | 151.4 | **78.14** |
+| 96 | 180.8 | **91.34** |
+| 127 | 179.8 | **124.3** |
+| 128 | 172.9 | **125.8** |
+| 256 | 337.1 | **272.5** |
+| 512 | **492.6** | 715.0 |
+| 1024 | **879.9** | 1997.7 |
+
+### INV (ns/op)
+
+| Bits | NTL.jl 0.13.0 | C++ NTL |
+|---:|---:|---:|
+| 8 | **27.78** | 49.10 |
+| 16 | **27.96** | 49.09 |
+| 24 | **27.81** | 49.15 |
+| 31 | **28.98** | 49.72 |
+| 32 | **28.08** | 49.27 |
+| 48 | **43.28** | 49.77 |
+| 63 | **43.03** | 320.4 |
+| 64 | **174.4** | 323.5 |
+| 96 | **269.7** | 323.8 |
+| 127 | **275.9** | 341.9 |
+| 128 | **280.0** | 342.4 |
+| 256 | **302.7** | 462.7 |
+| 512 | **372.1** | 551.3 |
+| 1024 | **481.0** | 793.8 |
+
+### POW (µs/op)
+
+| Bits | NTL.jl 0.13.0 | C++ NTL |
+|---:|---:|---:|
+| 8 | 289.7 | **0.544** |
+| 16 | 254.3 | **0.548** |
+| 24 | 257.0 | **0.549** |
+| 31 | 325.0 | **0.547** |
+| 32 | 297.0 | **0.547** |
+| 48 | 294.3 | **0.548** |
+| 63 | 294.5 | **3.796** |
+| 64 | 651.9 | **3.802** |
+| 96 | 1262.1 | **3.636** |
+| 127 | 1320.9 | **5.384** |
+| 128 | 1704.8 | **5.144** |
+| 256 | 3891.8 | **12.61** |
+| 512 | 9942.1 | **32.13** |
+| 1024 | 33392.1 | **109.0** |
+
+## Optimization design and rationality
+
+1. **PrimeField:** specialized unsigned multiplication, Barrett reduction for large machine-word moduli, and Montgomery powering on 64-bit builds. Generated constants are compile-time values rather than mutable global state.
+2. **BigModRing:** conditional add/subtract corrections, GMP-backed inversion and `powermod`. No shared mutable global workspace is used.
+3. **Packed polynomial multiplication:** coefficients are packed as base-2^bits digits only when the worst-case coefficient bound fits one digit, preventing cross-coefficient carries. Other inputs retain schoolbook, Karatsuba, or NTT paths.
+4. **NTT and CRT:** DIF forward and DIT inverse transforms consume the same bit-reversed order. Unit roots are selected by exact-order checks, and `UInt128` CRT is limited to at most four auxiliary primes; larger cases retain BigInt CRT.
+5. **Determinants:** delayed modular reduction uses a computed refresh interval based on the machine-integer bound, with a generic fallback for unsuitable moduli.
+6. **Factorization:** typed polynomial parents and buffered small-degree modular powers reduce repeated allocation and leading-inverse work without replacing the general factorization algorithms.
+7. **LLL:** incremental floating GSO updates are backed by checked integer row operations and BigInt fallback. Exact fraction-free checks still verify the transformation, unimodularity, size reduction, and Lovász condition.
+
+## Remaining optimization targets
+
+- `BigModRing` addition remains slower than C++ NTL at large bit widths. Avoiding full BigInt division/modulo after every small operation is still a relevant direction.
+- `small_modmul` needs profiling at the call boundary as well as inside the arithmetic kernel; library-only micro-optimization is not enough.
+- Factorization still requires algorithm-level work on repeated modulus reduction and Frobenius-based composition rather than only loop tuning.
+- Polynomial, matrix, factorization, and lattice workloads have different bottlenecks and should retain separate benchmarks rather than a single aggregate score.
 
 ## Files and reproduction
 
-- `primes.csv`: all random moduli in decimal form.
-- `benchmark.jl`: NTL.jl and GaloisFields benchmark.
-- `benchmark.cpp`: C++ NTL benchmark.
-- `results-julia.csv`: Julia-side per-prime results.
-- `results-cpp.csv`: C++ per-prime results.
-- `results-all.csv`: combined random-prime raw data.
-- `workloads.cpp`: C++ package-workload benchmark.
-- `workloads.jl`: mixed-process NTL.jl / GaloisFields workloads.
-- `workloads_ntl.jl`: pure-NTL workloads used against C++ NTL.
-- `results-workloads-cpp.csv`: C++ package-workload results.
-- `results-workloads-ntl.csv`: pure-NTL package-workload results.
-- `results-workloads-julia.csv`: mixed-process NTL.jl / GaloisFields results.
-- `results-workloads-all.csv`: combined package-workload raw data.
+The `validation/` directory contains the optimized and baseline raw CSV files, C++ results, the kit comparison, and typed examples. The benchmark root also contains `benchmark.jl`, `benchmark.cpp`, `workloads.jl`, `workloads.cpp`, `workloads_ntl.jl`, and `generate_primes.jl` for independent replay.
 
-On the project server, the scripts are in `/home/jingdong/kimi/ntl-benchmark`. The essential commands are:
+On the project server, run the kit's complete comparison with:
 
 ```bash
-/home/jingdong/kimi/julia-1.11.7/bin/julia --project=/home/jingdong/kimi/NTLJulia generate_primes.jl primes.csv
+cd /home/jingdong/kimi/ntl-benchmark
+export JULIA=/home/jingdong/kimi/julia-1.11.7/bin/julia
+export NTL_INCLUDE_DIR=/home/jingdong/kimi/ntl-install/include
+export NTL_ARCHIVE=/home/jingdong/kimi/ntl-install/lib/libntl.a
+export GF2X_ARCHIVE=/home/jingdong/kimi/gf2x-install/lib/libgf2x.a
+bash run.sh /home/jingdong/kimi/NTLJulia   /home/jingdong/kimi/NTLJulia-opt-kit   /home/jingdong/kimi/ntl-benchmark   /home/jingdong/kimi/kit-results
+```
 
-g++ -O3 -DNDEBUG -std=c++17   -I/home/jingdong/kimi/ntl-install/include benchmark.cpp   -o benchmark-random-prime   /home/jingdong/kimi/ntl-install/lib/libntl.a   /home/jingdong/kimi/gf2x-install/lib/libgf2x.a   -L/usr/lib/x86_64-linux-gnu -l:libgmp.so.10 -lpthread
+Run the package tests and independent replay with:
 
-./benchmark-random-prime primes.csv results-cpp.csv
+```bash
+/home/jingdong/kimi/julia-1.11.7/bin/julia --startup-file=no --threads=1   --project=/home/jingdong/kimi/NTLJulia-opt-kit test/runtests.jl
 
-JULIA_DEPOT_PATH=/home/jingdong/kimi/.julia JULIA_LOAD_PATH=/home/jingdong/kimi/NTLJulia:/home/jingdong/kimi/.julia/environments/v1.11:@stdlib /home/jingdong/kimi/julia-1.11.7/bin/julia --threads=1   benchmark.jl primes.csv results-julia.csv
-
-# Package-level workloads
-g++ -O3 -DNDEBUG -std=c++17 \
-  -I/home/jingdong/kimi/ntl-install/include workloads.cpp \
-  -o benchmark-workloads \
-  /home/jingdong/kimi/ntl-install/lib/libntl.a \
-  /home/jingdong/kimi/gf2x-install/lib/libgf2x.a \
-  -L/usr/lib/x86_64-linux-gnu -l:libgmp.so.10 -lpthread
-./benchmark-workloads results-workloads-cpp.csv
-/home/jingdong/kimi/julia-1.11.7/bin/julia --threads=1 \
-  --project=/home/jingdong/kimi/NTLJulia workloads_ntl.jl results-workloads-ntl.csv
-
-JULIA_DEPOT_PATH=/home/jingdong/kimi/.julia \
-JULIA_LOAD_PATH=/home/jingdong/kimi/NTLJulia:/home/jingdong/kimi/.julia/environments/v1.11:@stdlib \
-/home/jingdong/kimi/julia-1.11.7/bin/julia --threads=1 \
-  workloads.jl results-workloads-julia.csv
+JULIA_DEPOT_PATH=/home/jingdong/kimi/.julia JULIA_LOAD_PATH=/home/jingdong/kimi/NTLJulia-opt-kit:/home/jingdong/kimi/.julia/environments/v1.11:@stdlib /home/jingdong/kimi/julia-1.11.7/bin/julia --threads=1   --project=/home/jingdong/kimi/NTLJulia-opt-kit benchmark.jl primes.csv results-julia-opt-kit.csv
 ```
