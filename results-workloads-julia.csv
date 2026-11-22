@@ -1,0 +1,28 @@
+workload,package,backend,ms,checksum,trials,note
+small_modmul,NTL.jl,PrimeField,72.88312099999999,410346119,31,1e6 mul+add; input construction excluded
+big_modpow,NTL.jl,BigModRing,0.023705,2154208505148906360541873028424667532332439095099588942000930246186107460581814012045564532368251957705410866623609051518291969628164229865020686601975286003,31,p=2^521-1; exponent=1000000
+polynomial_mul,NTL.jl,ModPoly,0.30902399999999997,2026,31,degree 999 inputs; deterministic coefficients
+ntt_convolve,NTL.jl,radix-two NTT,1.112649,992302,31,4096 coefficients per input; linear convolution
+factorization,NTL.jl,Cantor-Zassenhaus,0.716653,5,31,fixed degree-7 factorization input; reconstruction checked outside timing
+determinant,NTL.jl,generic field fallback,0.041542,0,31,40x40; p=1000000007
+lll,NTL.jl,fast LLL + exact verification,1.888041,verified,31,12x12; includes exact post-verification
+lll_reduce_only,NTL.jl,fast LLL without exact verification,0.283593,exact-verification-disabled,31,12x12; verify=false; structural identities checked outside timing
+probprime,NTL.jl,deterministic Int witnesses,5.194501,200,31,200 calls; deterministic witnesses; p=2^61-1
+prime_muladd_separate,NTL.jl,PrimeField,65.96426699999999,1,31,1e6 separate multiply-add; p=101
+prime_muladd_separate,GaloisFields.jl,PrimeField,70.885082,1,31,1e6 separate multiply-add; p=101
+prime_muladd_fused,NTL.jl,fused muladd,9.990171,1,31,1e6 fused multiply-add; p=101
+prime_muladd_fused,GaloisFields.jl,generic muladd,14.899384,1,31,1e6 generic multiply-add; p=101
+prime_power_1000,NTL.jl,PrimeField,0.42916299999999996,1,31,10000 powers; exponent=1000; p=101
+prime_power_1000,GaloisFields.jl,PrimeField,0.426483,1,31,10000 powers; exponent=1000; p=101
+prime_inverse,NTL.jl,PrimeField,0.238595,34,31,10000 inversions; p=101
+prime_inverse,GaloisFields.jl,PrimeField,0.23136099999999998,34,31,10000 inversions; p=101
+zech_extension_ops,NTL.jl,ZechElem,0.484904,3,31,10000 extension multiply-add steps; F_3^2
+zech_extension_ops,GaloisFields.jl,ExtensionField,0.6041650000000001,β,31,10000 extension multiply-add steps; F_3^2
+zech_muladd,NTL.jl,Zech muladd,0.557339,3,31,10000 fused extension multiply-add steps; F_3^2
+zech_muladd,GaloisFields.jl,generic muladd,0.604934,β,31,10000 generic extension multiply-add steps; F_3^2
+zech_inverse,NTL.jl,ZechElem,0.37903299999999995,4,31,10000 extension inversions; F_3^2
+zech_inverse,GaloisFields.jl,ExtensionField,0.483205,β + 2,31,10000 extension inversions; F_3^2
+zech_power,NTL.jl,ZechElem,0.420896,2,31,10000 extension powers; exponent=100; F_3^2
+zech_power,GaloisFields.jl,ExtensionField,0.384243,2,31,10000 extension powers; exponent=100; F_3^2
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,0.313622,2026,31,degree 999 inputs; p=101
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,6.446591,2026,31,degree 999 inputs; p=101

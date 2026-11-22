@@ -1,0 +1,10 @@
+workload,package,backend,ms,checksum,trials,note
+small_modmul,C++ NTL,zz_p,8.46640100,410346119,31,1e6 mul+add; input construction excluded
+big_modpow,C++ NTL,ZZ_p,0.01298300,2154208505148906360541873028424667532332439095099588942000930246186107460581814012045564532368251957705410866623609051518291969628164229865020686601975286003,31,p=2^521-1; exponent=1000000
+polynomial_mul,C++ NTL,zz_pX,0.06553600,2026,31,degree 999 inputs; deterministic coefficients
+ntt_convolve,C++ NTL,zz_pX,0.66286700,992302,31,4096 coefficients per input; linear convolution
+factorization,C++ NTL,CanZass,0.02773400,5,31,fixed degree-7 factorization input
+determinant,C++ NTL,mat_zz_p,0.03027600,0,31,40x40; p=1000000007
+lll,C++ NTL,NTL_LLL,0.06971600,38775788043632640000,31,12x12; native LLL; no separate Julia-style verification
+lll_reduce_only,C++ NTL,NTL_LLL,0.06906200,38775788043632640000,31,12x12; same native call used for reduction-only comparison
+probprime,C++ NTL,ProbPrime,13.93229000,200,31,200 calls; 16 rounds; p=2^61-1
