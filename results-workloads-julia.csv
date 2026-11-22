@@ -1,28 +1,154 @@
-workload,package,backend,ms,checksum,trials,note
-small_modmul,NTL.jl,PrimeField,72.88312099999999,410346119,31,1e6 mul+add; input construction excluded
-big_modpow,NTL.jl,BigModRing,0.023705,2154208505148906360541873028424667532332439095099588942000930246186107460581814012045564532368251957705410866623609051518291969628164229865020686601975286003,31,p=2^521-1; exponent=1000000
-polynomial_mul,NTL.jl,ModPoly,0.30902399999999997,2026,31,degree 999 inputs; deterministic coefficients
-ntt_convolve,NTL.jl,radix-two NTT,1.112649,992302,31,4096 coefficients per input; linear convolution
-factorization,NTL.jl,Cantor-Zassenhaus,0.716653,5,31,fixed degree-7 factorization input; reconstruction checked outside timing
-determinant,NTL.jl,generic field fallback,0.041542,0,31,40x40; p=1000000007
-lll,NTL.jl,fast LLL + exact verification,1.888041,verified,31,12x12; includes exact post-verification
-lll_reduce_only,NTL.jl,fast LLL without exact verification,0.283593,exact-verification-disabled,31,12x12; verify=false; structural identities checked outside timing
-probprime,NTL.jl,deterministic Int witnesses,5.194501,200,31,200 calls; deterministic witnesses; p=2^61-1
-prime_muladd_separate,NTL.jl,PrimeField,65.96426699999999,1,31,1e6 separate multiply-add; p=101
-prime_muladd_separate,GaloisFields.jl,PrimeField,70.885082,1,31,1e6 separate multiply-add; p=101
-prime_muladd_fused,NTL.jl,fused muladd,9.990171,1,31,1e6 fused multiply-add; p=101
-prime_muladd_fused,GaloisFields.jl,generic muladd,14.899384,1,31,1e6 generic multiply-add; p=101
-prime_power_1000,NTL.jl,PrimeField,0.42916299999999996,1,31,10000 powers; exponent=1000; p=101
-prime_power_1000,GaloisFields.jl,PrimeField,0.426483,1,31,10000 powers; exponent=1000; p=101
-prime_inverse,NTL.jl,PrimeField,0.238595,34,31,10000 inversions; p=101
-prime_inverse,GaloisFields.jl,PrimeField,0.23136099999999998,34,31,10000 inversions; p=101
-zech_extension_ops,NTL.jl,ZechElem,0.484904,3,31,10000 extension multiply-add steps; F_3^2
-zech_extension_ops,GaloisFields.jl,ExtensionField,0.6041650000000001,β,31,10000 extension multiply-add steps; F_3^2
-zech_muladd,NTL.jl,Zech muladd,0.557339,3,31,10000 fused extension multiply-add steps; F_3^2
-zech_muladd,GaloisFields.jl,generic muladd,0.604934,β,31,10000 generic extension multiply-add steps; F_3^2
-zech_inverse,NTL.jl,ZechElem,0.37903299999999995,4,31,10000 extension inversions; F_3^2
-zech_inverse,GaloisFields.jl,ExtensionField,0.483205,β + 2,31,10000 extension inversions; F_3^2
-zech_power,NTL.jl,ZechElem,0.420896,2,31,10000 extension powers; exponent=100; F_3^2
-zech_power,GaloisFields.jl,ExtensionField,0.384243,2,31,10000 extension powers; exponent=100; F_3^2
-polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,0.313622,2026,31,degree 999 inputs; p=101
-polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,6.446591,2026,31,degree 999 inputs; p=101
+workload,package,backend,p,ms,checksum,trials,note
+small_modmul,NTL.jl,PrimeField,,66.42040300000001,410346119,31,1e6 mul+add; input construction excluded
+big_modpow,NTL.jl,BigModRing,,0.023703,2154208505148906360541873028424667532332439095099588942000930246186107460581814012045564532368251957705410866623609051518291969628164229865020686601975286003,31,p=2^521-1; exponent=1000000
+polynomial_mul,NTL.jl,ModPoly,,0.310747,2026,31,degree 999 inputs; deterministic coefficients
+ntt_convolve,NTL.jl,radix-two NTT,,1.113313,992302,31,4096 coefficients per input; linear convolution
+factorization,NTL.jl,Cantor-Zassenhaus,,0.713413,5,31,fixed degree-7 factorization input; reconstruction checked outside timing
+determinant,NTL.jl,generic field fallback,,0.041467000000000004,0,31,40x40; p=1000000007
+lll,NTL.jl,fast LLL + exact verification,,1.8664020000000001,verified,31,12x12; includes exact post-verification
+lll_reduce_only,NTL.jl,fast LLL without exact verification,,0.276623,exact-verification-disabled,31,12x12; verify=false; structural identities checked outside timing
+probprime,NTL.jl,deterministic Int witnesses,,5.137454,200,31,200 calls; deterministic witnesses; p=2^61-1
+prime_muladd_separate,NTL.jl,PrimeField,97,67.551346,21,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_separate,GaloisFields.jl,PrimeField,97,69.290115,21,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_fused,NTL.jl,fused muladd,97,10.003222000000001,21,31,1e6 fused multiply-add; random 7-bit prime set
+prime_muladd_fused,GaloisFields.jl,generic muladd,97,14.786334,21,31,1e6 generic multiply-add; random 7-bit prime set
+prime_power_1000,NTL.jl,PrimeField,97,0.42741399999999996,36,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_power_1000,GaloisFields.jl,PrimeField,97,0.541515,36,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_inverse,NTL.jl,PrimeField,97,0.161354,65,31,10000 inversions; random 7-bit prime set
+prime_inverse,GaloisFields.jl,PrimeField,97,0.13885699999999998,65,31,10000 inversions; random 7-bit prime set
+zech_extension_ops,NTL.jl,ZechElem,97,0.4964,5592,31,10000 extension multiply-add steps; random quadratic base primes
+zech_extension_ops,GaloisFields.jl,ExtensionField,97,0.874747,90 * β + 94,31,10000 extension multiply-add steps; random quadratic base primes
+zech_muladd,NTL.jl,Zech muladd,97,0.600376,5592,31,10000 fused extension multiply-add steps; random quadratic base primes
+zech_muladd,GaloisFields.jl,generic muladd,97,0.8793730000000001,90 * β + 94,31,10000 generic extension multiply-add steps; random quadratic base primes
+zech_inverse,NTL.jl,ZechElem,97,0.475272,3765,31,10000 extension inversions; random quadratic base primes
+zech_inverse,GaloisFields.jl,ExtensionField,97,0.448314,58 * β + 39,31,10000 extension inversions; random quadratic base primes
+zech_power,NTL.jl,ZechElem,97,0.49078499999999997,1724,31,10000 extension powers; exponent=100; random quadratic base primes
+zech_power,GaloisFields.jl,ExtensionField,97,0.3791,5 * β + 72,31,10000 extension powers; exponent=100; random quadratic base primes
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,97,0.291108,2057,31,degree 999 inputs; random 7-bit prime set
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,97,7.665926,2057,31,degree 999 inputs; random 7-bit prime set
+prime_muladd_separate,NTL.jl,PrimeField,107,68.06408499999999,72,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_separate,GaloisFields.jl,PrimeField,107,68.879535,72,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_fused,NTL.jl,fused muladd,107,10.159589,72,31,1e6 fused multiply-add; random 7-bit prime set
+prime_muladd_fused,GaloisFields.jl,generic muladd,107,14.262276,72,31,1e6 generic multiply-add; random 7-bit prime set
+prime_power_1000,NTL.jl,PrimeField,107,0.379281,41,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_power_1000,GaloisFields.jl,PrimeField,107,0.440157,41,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_inverse,NTL.jl,PrimeField,107,0.239203,36,31,10000 inversions; random 7-bit prime set
+prime_inverse,GaloisFields.jl,PrimeField,107,0.231405,36,31,10000 inversions; random 7-bit prime set
+zech_extension_ops,NTL.jl,ZechElem,107,0.5176189999999999,2281,31,10000 extension multiply-add steps; random quadratic base primes
+zech_extension_ops,GaloisFields.jl,ExtensionField,107,0.802801,61 * β + 24,31,10000 extension multiply-add steps; random quadratic base primes
+zech_muladd,NTL.jl,Zech muladd,107,0.6110650000000001,2281,31,10000 fused extension multiply-add steps; random quadratic base primes
+zech_muladd,GaloisFields.jl,generic muladd,107,0.81092,61 * β + 24,31,10000 generic extension multiply-add steps; random quadratic base primes
+zech_inverse,NTL.jl,ZechElem,107,0.415033,2553,31,10000 extension inversions; random quadratic base primes
+zech_inverse,GaloisFields.jl,ExtensionField,107,0.449829,53 * β + 2,31,10000 extension inversions; random quadratic base primes
+zech_power,NTL.jl,ZechElem,107,0.7756240000000001,6056,31,10000 extension powers; exponent=100; random quadratic base primes
+zech_power,GaloisFields.jl,ExtensionField,107,0.379737,56 * β + 27,31,10000 extension powers; exponent=100; random quadratic base primes
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,107,0.275943,2016,31,degree 999 inputs; random 7-bit prime set
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,107,7.870563000000001,2016,31,degree 999 inputs; random 7-bit prime set
+prime_muladd_separate,NTL.jl,PrimeField,113,62.954187,37,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_separate,GaloisFields.jl,PrimeField,113,76.40923099999999,37,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_fused,NTL.jl,fused muladd,113,10.580773,37,31,1e6 fused multiply-add; random 7-bit prime set
+prime_muladd_fused,GaloisFields.jl,generic muladd,113,15.214804,37,31,1e6 generic multiply-add; random 7-bit prime set
+prime_power_1000,NTL.jl,PrimeField,113,0.38189700000000004,97,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_power_1000,GaloisFields.jl,PrimeField,113,0.429489,97,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_inverse,NTL.jl,PrimeField,113,0.239125,38,31,10000 inversions; random 7-bit prime set
+prime_inverse,GaloisFields.jl,PrimeField,113,0.239967,38,31,10000 inversions; random 7-bit prime set
+zech_extension_ops,NTL.jl,ZechElem,113,0.505108,291,31,10000 extension multiply-add steps; random quadratic base primes
+zech_extension_ops,GaloisFields.jl,ExtensionField,113,0.8304290000000001,18 * β + 22,31,10000 extension multiply-add steps; random quadratic base primes
+zech_muladd,NTL.jl,Zech muladd,113,0.602493,291,31,10000 fused extension multiply-add steps; random quadratic base primes
+zech_muladd,GaloisFields.jl,generic muladd,113,0.827399,18 * β + 22,31,10000 generic extension multiply-add steps; random quadratic base primes
+zech_inverse,NTL.jl,ZechElem,113,0.37248099999999995,7686,31,10000 extension inversions; random quadratic base primes
+zech_inverse,GaloisFields.jl,ExtensionField,113,0.46632,75 * β + 4,31,10000 extension inversions; random quadratic base primes
+zech_power,NTL.jl,ZechElem,113,0.488938,5458,31,10000 extension powers; exponent=100; random quadratic base primes
+zech_power,GaloisFields.jl,ExtensionField,113,0.379984,5 * β + 24,31,10000 extension powers; exponent=100; random quadratic base primes
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,113,0.298221,2046,31,degree 999 inputs; random 7-bit prime set
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,113,7.915049000000001,2046,31,degree 999 inputs; random 7-bit prime set
+prime_muladd_separate,NTL.jl,PrimeField,67,72.658379,53,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_separate,GaloisFields.jl,PrimeField,67,71.60913400000001,53,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_fused,NTL.jl,fused muladd,67,10.674546,53,31,1e6 fused multiply-add; random 7-bit prime set
+prime_muladd_fused,GaloisFields.jl,generic muladd,67,14.367687,53,31,1e6 generic multiply-add; random 7-bit prime set
+prime_power_1000,NTL.jl,PrimeField,67,0.38477500000000003,22,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_power_1000,GaloisFields.jl,PrimeField,67,0.429043,22,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_inverse,NTL.jl,PrimeField,67,0.162098,45,31,10000 inversions; random 7-bit prime set
+prime_inverse,GaloisFields.jl,PrimeField,67,0.139049,45,31,10000 inversions; random 7-bit prime set
+zech_extension_ops,NTL.jl,ZechElem,67,0.49409200000000003,2670,31,10000 extension multiply-add steps; random quadratic base primes
+zech_extension_ops,GaloisFields.jl,ExtensionField,67,0.8490219999999999,48 * β + 66,31,10000 extension multiply-add steps; random quadratic base primes
+zech_muladd,NTL.jl,Zech muladd,67,0.589894,2670,31,10000 fused extension multiply-add steps; random quadratic base primes
+zech_muladd,GaloisFields.jl,generic muladd,67,0.848631,48 * β + 66,31,10000 generic extension multiply-add steps; random quadratic base primes
+zech_inverse,NTL.jl,ZechElem,67,0.371798,2363,31,10000 extension inversions; random quadratic base primes
+zech_inverse,GaloisFields.jl,ExtensionField,67,0.46043100000000003,33 * β + 2,31,10000 extension inversions; random quadratic base primes
+zech_power,NTL.jl,ZechElem,67,0.483595,969,31,10000 extension powers; exponent=100; random quadratic base primes
+zech_power,GaloisFields.jl,ExtensionField,67,0.38282099999999997,3 * β + 57,31,10000 extension powers; exponent=100; random quadratic base primes
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,67,0.27609100000000003,2060,31,degree 999 inputs; random 7-bit prime set
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,67,5.357091,2060,31,degree 999 inputs; random 7-bit prime set
+prime_muladd_separate,NTL.jl,PrimeField,73,68.337727,67,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_separate,GaloisFields.jl,PrimeField,73,70.942715,67,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_fused,NTL.jl,fused muladd,73,10.796861,67,31,1e6 fused multiply-add; random 7-bit prime set
+prime_muladd_fused,GaloisFields.jl,generic muladd,73,14.321999,67,31,1e6 generic multiply-add; random 7-bit prime set
+prime_power_1000,NTL.jl,PrimeField,73,0.389273,8,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_power_1000,GaloisFields.jl,PrimeField,73,0.532922,8,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_inverse,NTL.jl,PrimeField,73,0.16196,49,31,10000 inversions; random 7-bit prime set
+prime_inverse,GaloisFields.jl,PrimeField,73,0.139131,49,31,10000 inversions; random 7-bit prime set
+zech_extension_ops,NTL.jl,ZechElem,73,0.491411,5097,31,10000 extension multiply-add steps; random quadratic base primes
+zech_extension_ops,GaloisFields.jl,ExtensionField,73,0.896558,59 * β + 59,31,10000 extension multiply-add steps; random quadratic base primes
+zech_muladd,NTL.jl,Zech muladd,73,0.5913010000000001,5097,31,10000 fused extension multiply-add steps; random quadratic base primes
+zech_muladd,GaloisFields.jl,generic muladd,73,0.896955,59 * β + 59,31,10000 generic extension multiply-add steps; random quadratic base primes
+zech_inverse,NTL.jl,ZechElem,73,0.382119,3276,31,10000 extension inversions; random quadratic base primes
+zech_inverse,GaloisFields.jl,ExtensionField,73,0.51244,29 * β + 59,31,10000 extension inversions; random quadratic base primes
+zech_power,NTL.jl,ZechElem,73,0.48590500000000003,2020,31,10000 extension powers; exponent=100; random quadratic base primes
+zech_power,GaloisFields.jl,ExtensionField,73,0.384281,65 * β + 27,31,10000 extension powers; exponent=100; random quadratic base primes
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,73,0.284276,2028,31,degree 999 inputs; random 7-bit prime set
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,73,6.115609,2028,31,degree 999 inputs; random 7-bit prime set
+prime_muladd_separate,NTL.jl,PrimeField,89,71.60541099999999,74,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_separate,GaloisFields.jl,PrimeField,89,71.541696,74,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_fused,NTL.jl,fused muladd,89,11.022337,74,31,1e6 fused multiply-add; random 7-bit prime set
+prime_muladd_fused,GaloisFields.jl,generic muladd,89,15.732474,74,31,1e6 generic multiply-add; random 7-bit prime set
+prime_power_1000,NTL.jl,PrimeField,89,0.42474199999999995,4,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_power_1000,GaloisFields.jl,PrimeField,89,0.423396,4,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_inverse,NTL.jl,PrimeField,89,0.240664,30,31,10000 inversions; random 7-bit prime set
+prime_inverse,GaloisFields.jl,PrimeField,89,0.23152799999999998,30,31,10000 inversions; random 7-bit prime set
+zech_extension_ops,NTL.jl,ZechElem,89,0.49512999999999996,4630,31,10000 extension multiply-add steps; random quadratic base primes
+zech_extension_ops,GaloisFields.jl,ExtensionField,89,0.865484,12 * β + 82,31,10000 extension multiply-add steps; random quadratic base primes
+zech_muladd,NTL.jl,Zech muladd,89,0.608808,4630,31,10000 fused extension multiply-add steps; random quadratic base primes
+zech_muladd,GaloisFields.jl,generic muladd,89,0.8682219999999999,12 * β + 82,31,10000 generic extension multiply-add steps; random quadratic base primes
+zech_inverse,NTL.jl,ZechElem,89,0.381108,3156,31,10000 extension inversions; random quadratic base primes
+zech_inverse,GaloisFields.jl,ExtensionField,89,0.467437,59 * β + 32,31,10000 extension inversions; random quadratic base primes
+zech_power,NTL.jl,ZechElem,89,0.48173,4862,31,10000 extension powers; exponent=100; random quadratic base primes
+zech_power,GaloisFields.jl,ExtensionField,89,0.379822,81 * β + 41,31,10000 extension powers; exponent=100; random quadratic base primes
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,89,0.291109,2072,31,degree 999 inputs; random 7-bit prime set
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,89,6.760547000000001,2072,31,degree 999 inputs; random 7-bit prime set
+prime_muladd_separate,NTL.jl,PrimeField,101,73.40978700000001,1,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_separate,GaloisFields.jl,PrimeField,101,70.76120800000001,1,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_fused,NTL.jl,fused muladd,101,11.1767,1,31,1e6 fused multiply-add; random 7-bit prime set
+prime_muladd_fused,GaloisFields.jl,generic muladd,101,16.834314,1,31,1e6 generic multiply-add; random 7-bit prime set
+prime_power_1000,NTL.jl,PrimeField,101,0.420443,1,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_power_1000,GaloisFields.jl,PrimeField,101,0.423972,1,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_inverse,NTL.jl,PrimeField,101,0.237603,34,31,10000 inversions; random 7-bit prime set
+prime_inverse,GaloisFields.jl,PrimeField,101,0.23185999999999998,34,31,10000 inversions; random 7-bit prime set
+zech_extension_ops,NTL.jl,ZechElem,101,0.529495,4421,31,10000 extension multiply-add steps; random quadratic base primes
+zech_extension_ops,GaloisFields.jl,ExtensionField,101,1.4650830000000001,45 * β + 77,31,10000 extension multiply-add steps; random quadratic base primes
+zech_muladd,NTL.jl,Zech muladd,101,0.665599,4421,31,10000 fused extension multiply-add steps; random quadratic base primes
+zech_muladd,GaloisFields.jl,generic muladd,101,0.901877,45 * β + 77,31,10000 generic extension multiply-add steps; random quadratic base primes
+zech_inverse,NTL.jl,ZechElem,101,0.385626,10036,31,10000 extension inversions; random quadratic base primes
+zech_inverse,GaloisFields.jl,ExtensionField,101,0.452586,50 * β + 2,31,10000 extension inversions; random quadratic base primes
+zech_power,NTL.jl,ZechElem,101,0.484508,6491,31,10000 extension powers; exponent=100; random quadratic base primes
+zech_power,GaloisFields.jl,ExtensionField,101,0.37720800000000004,99 * β + 7,31,10000 extension powers; exponent=100; random quadratic base primes
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,101,0.27727399999999996,2026,31,degree 999 inputs; random 7-bit prime set
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,101,6.338168,2026,31,degree 999 inputs; random 7-bit prime set
+prime_muladd_separate,NTL.jl,PrimeField,83,70.214222,19,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_separate,GaloisFields.jl,PrimeField,83,73.551148,19,31,1e6 separate multiply-add; random 7-bit prime set
+prime_muladd_fused,NTL.jl,fused muladd,83,11.106275,19,31,1e6 fused multiply-add; random 7-bit prime set
+prime_muladd_fused,GaloisFields.jl,generic muladd,83,16.068406,19,31,1e6 generic multiply-add; random 7-bit prime set
+prime_power_1000,NTL.jl,PrimeField,83,0.376359,16,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_power_1000,GaloisFields.jl,PrimeField,83,0.42669399999999996,16,31,10000 powers; exponent=1000; random 7-bit prime set
+prime_inverse,NTL.jl,PrimeField,83,0.24430200000000002,28,31,10000 inversions; random 7-bit prime set
+prime_inverse,GaloisFields.jl,PrimeField,83,0.23655099999999998,28,31,10000 inversions; random 7-bit prime set
+zech_extension_ops,NTL.jl,ZechElem,83,0.492052,762,31,10000 extension multiply-add steps; random quadratic base primes
+zech_extension_ops,GaloisFields.jl,ExtensionField,83,0.80848,55 * β + 5,31,10000 extension multiply-add steps; random quadratic base primes
+zech_muladd,NTL.jl,Zech muladd,83,0.589415,762,31,10000 fused extension multiply-add steps; random quadratic base primes
+zech_muladd,GaloisFields.jl,generic muladd,83,0.809969,55 * β + 5,31,10000 generic extension multiply-add steps; random quadratic base primes
+zech_inverse,NTL.jl,ZechElem,83,0.376407,962,31,10000 extension inversions; random quadratic base primes
+zech_inverse,GaloisFields.jl,ExtensionField,83,0.44672100000000003,41 * β + 42,31,10000 extension inversions; random quadratic base primes
+zech_power,NTL.jl,ZechElem,83,0.481291,6763,31,10000 extension powers; exponent=100; random quadratic base primes
+zech_power,GaloisFields.jl,ExtensionField,83,0.38093699999999997,20 * β + 24,31,10000 extension powers; exponent=100; random quadratic base primes
+polynomial_mul_deg999,NTL.jl,ModPoly generalized FFT,83,0.28362,2022,31,degree 999 inputs; random 7-bit prime set
+polynomial_mul_deg999,GaloisFields.jl,Polynomials.jl,83,6.359481000000001,2022,31,degree 999 inputs; random 7-bit prime set

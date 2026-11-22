@@ -18,14 +18,14 @@ function measure(name, backend, note, fn)
     ms, checksum
 end
 
-function record(fn::Function, io, name, package, backend, note)
+function record(fn::Function, io, name, package, backend, note; p="")
     ms, checksum = measure(name, backend, note, fn)
-    println(io, join((name, package, backend, ms, checksum, REPS, note), ','))
+    println(io, join((name, package, backend, p, ms, checksum, REPS, note), ','))
     flush(io)
 end
 
 open(OUTPUT, "w") do io
-    println(io, "workload,package,backend,ms,checksum,trials,note")
+    println(io, "workload,package,backend,p,ms,checksum,trials,note")
 
     F = PrimeField(1000000007)
     a, b = F(123456789), F(987654321)
@@ -109,137 +109,151 @@ open(OUTPUT, "w") do io
         string(count)
     end
 
-    # Exact GaloisFields comparison workloads from the package README.
-    SP = PrimeField(101)
-    G = GaloisField(101)
-    sa, sb = SP(123456789), SP(987654321)
-    ga, gb = G(123456789), G(987654321)
+    # Random small-prime comparison: the same eight primes are used for every
+    # workload and both packages. Seven-bit primes also keep p^2 below the
+    # current Zech table limit.
+    prime_rng = MersenneTwister(20261122)
+    small_primes = Int[]
+    while length(small_primes) < 8
+        q = Int(GenPrime(7; rng=prime_rng))
+        q in small_primes || push!(small_primes, q)
+    end
+    println("Random 7-bit prime set: ", small_primes)
 
-    record(io, "prime_muladd_separate", "NTL.jl", "PrimeField", "1e6 separate multiply-add; p=101") do
-        c = one(SP)
-        for _ in 1:1000000
-            c *= sa
-            c += sb
+    for p in small_primes
+        SP = PrimeField(p)
+        G = GaloisField(p)
+        sa, sb = SP(123456789), SP(987654321)
+        ga, gb = G(123456789), G(987654321)
+
+        record(io, "prime_muladd_separate", "NTL.jl", "PrimeField", "1e6 separate multiply-add; random 7-bit prime set"; p=p) do
+            c = one(SP)
+            for _ in 1:1000000
+                c *= sa
+                c += sb
+            end
+            string(rep(c))
         end
-        string(rep(c))
-    end
-    record(io, "prime_muladd_separate", "GaloisFields.jl", "PrimeField", "1e6 separate multiply-add; p=101") do
-        c = one(G)
-        for _ in 1:1000000
-            c *= ga
-            c += gb
+        record(io, "prime_muladd_separate", "GaloisFields.jl", "PrimeField", "1e6 separate multiply-add; random 7-bit prime set"; p=p) do
+            c = one(G)
+            for _ in 1:1000000
+                c *= ga
+                c += gb
+            end
+            string(Integer(c))
         end
-        string(Integer(c))
-    end
 
-    record(io, "prime_muladd_fused", "NTL.jl", "fused muladd", "1e6 fused multiply-add; p=101") do
-        c = one(SP)
-        for _ in 1:1000000
-            c = Base.muladd(c, sa, sb)
+        record(io, "prime_muladd_fused", "NTL.jl", "fused muladd", "1e6 fused multiply-add; random 7-bit prime set"; p=p) do
+            c = one(SP)
+            for _ in 1:1000000
+                c = Base.muladd(c, sa, sb)
+            end
+            string(rep(c))
         end
-        string(rep(c))
-    end
-    record(io, "prime_muladd_fused", "GaloisFields.jl", "generic muladd", "1e6 generic multiply-add; p=101") do
-        c = one(G)
-        for _ in 1:1000000
-            c = Base.muladd(c, ga, gb)
+        record(io, "prime_muladd_fused", "GaloisFields.jl", "generic muladd", "1e6 generic multiply-add; random 7-bit prime set"; p=p) do
+            c = one(G)
+            for _ in 1:1000000
+                c = Base.muladd(c, ga, gb)
+            end
+            string(Integer(c))
         end
-        string(Integer(c))
-    end
 
-    sx, gx = SP(3), G(3)
-    @assert sx * inv(sx) == one(SP)
-    @assert gx * inv(gx) == one(G)
-    record(io, "prime_power_1000", "NTL.jl", "PrimeField", "10000 powers; exponent=1000; p=101") do
-        v = [sx^1000 for _ in 1:10000]
-        string(rep(v[end]))
-    end
-    record(io, "prime_power_1000", "GaloisFields.jl", "PrimeField", "10000 powers; exponent=1000; p=101") do
-        v = [gx^1000 for _ in 1:10000]
-        string(v[end])
-    end
-    record(io, "prime_inverse", "NTL.jl", "PrimeField", "10000 inversions; p=101") do
-        v = [inv(sx) for _ in 1:10000]
-        string(rep(v[end]))
-    end
-    record(io, "prime_inverse", "GaloisFields.jl", "PrimeField", "10000 inversions; p=101") do
-        v = [inv(gx) for _ in 1:10000]
-        string(v[end])
-    end
+        sx, gx = SP(3), G(3)
+        @assert sx * inv(sx) == one(SP)
+        @assert gx * inv(gx) == one(G)
+        record(io, "prime_power_1000", "NTL.jl", "PrimeField", "10000 powers; exponent=1000; random 7-bit prime set"; p=p) do
+            v = [sx^1000 for _ in 1:10000]
+            string(rep(v[end]))
+        end
+        record(io, "prime_power_1000", "GaloisFields.jl", "PrimeField", "10000 powers; exponent=1000; random 7-bit prime set"; p=p) do
+            v = [gx^1000 for _ in 1:10000]
+            string(v[end])
+        end
+        record(io, "prime_inverse", "NTL.jl", "PrimeField", "10000 inversions; random 7-bit prime set"; p=p) do
+            v = [inv(sx) for _ in 1:10000]
+            string(rep(v[end]))
+        end
+        record(io, "prime_inverse", "GaloisFields.jl", "PrimeField", "10000 inversions; random 7-bit prime set"; p=p) do
+            v = [inv(gx) for _ in 1:10000]
+            string(v[end])
+        end
 
-    EF = PrimeField(3)
-    E = extension_field(EF, poly(EF, [2, 1, 1]))
-    Z = zech_field(E)
-    z = ZechElem(Z, Z._generator)
-    e = gen(E)
-    GG, beta = GaloisField(3, 2, :β)
+        EF = PrimeField(p)
+        E = extension_field(EF, BuildIrred(EF, 2; rng=MersenneTwister(p)))
+        Z = zech_field(E)
+        z = ZechElem(Z, Z._generator)
+        e = extension_element(z)
+        GG, beta = GaloisField(p, 2, :β)
 
-    ordinary = e
-    fast = z
-    for _ in 1:10000
-        ordinary = ordinary * e + one(ordinary)
-        fast = fast * z + one(fast)
-    end
-    @assert extension_element(fast) == ordinary
-    @assert extension_element(inv(z)) == inv(e)
-    @assert extension_element(z^100) == e^100
-
-    record(io, "zech_extension_ops", "NTL.jl", "ZechElem", "10000 extension multiply-add steps; F_3^2") do
-        y = z
+        ordinary = e
+        fast = z
         for _ in 1:10000
-            y = y * z + one(y)
+            ordinary = ordinary * e + one(ordinary)
+            fast = fast * z + one(fast)
         end
-        string(rep(y))
-    end
-    record(io, "zech_extension_ops", "GaloisFields.jl", "ExtensionField", "10000 extension multiply-add steps; F_3^2") do
-        y = beta
-        for _ in 1:10000
-            y = y * beta + one(y)
+        @assert extension_element(fast) == ordinary
+        @assert extension_element(inv(z)) == inv(e)
+        @assert extension_element(z^100) == e^100
+
+        record(io, "zech_extension_ops", "NTL.jl", "ZechElem", "10000 extension multiply-add steps; random quadratic base primes"; p=p) do
+            y = z
+            for _ in 1:10000
+                y = y * z + one(y)
+            end
+            string(rep(y))
         end
-        string(y)
+        record(io, "zech_extension_ops", "GaloisFields.jl", "ExtensionField", "10000 extension multiply-add steps; random quadratic base primes"; p=p) do
+            y = beta
+            for _ in 1:10000
+                y = y * beta + one(y)
+            end
+            string(y)
+        end
+
+        record(io, "zech_muladd", "NTL.jl", "Zech muladd", "10000 fused extension multiply-add steps; random quadratic base primes"; p=p) do
+            y = z
+            for _ in 1:10000
+                y = Base.muladd(y, z, one(y))
+            end
+            string(rep(y))
+        end
+        record(io, "zech_muladd", "GaloisFields.jl", "generic muladd", "10000 generic extension multiply-add steps; random quadratic base primes"; p=p) do
+            y = beta
+            for _ in 1:10000
+                y = Base.muladd(y, beta, one(y))
+            end
+            string(y)
+        end
+
+        record(io, "zech_inverse", "NTL.jl", "ZechElem", "10000 extension inversions; random quadratic base primes"; p=p) do
+            v = [inv(z) for _ in 1:10000]
+            string(rep(v[end]))
+        end
+        record(io, "zech_inverse", "GaloisFields.jl", "ExtensionField", "10000 extension inversions; random quadratic base primes"; p=p) do
+            v = [inv(beta) for _ in 1:10000]
+            string(v[end])
+        end
+        record(io, "zech_power", "NTL.jl", "ZechElem", "10000 extension powers; exponent=100; random quadratic base primes"; p=p) do
+            v = [z^100 for _ in 1:10000]
+            string(rep(v[end]))
+        end
+        record(io, "zech_power", "GaloisFields.jl", "ExtensionField", "10000 extension powers; exponent=100; random quadratic base primes"; p=p) do
+            v = [beta^100 for _ in 1:10000]
+            string(v[end])
+        end
+
+        SPA, SPB = poly(SP, ac), poly(SP, bc)
+        GPA, GPB = Polynomial(G.(ac)), Polynomial(G.(bc))
+        record(io, "polynomial_mul_deg999", "NTL.jl", "ModPoly generalized FFT", "degree 999 inputs; random 7-bit prime set"; p=p) do
+            c = SPA * SPB
+            string(NTL.degree(c) + rep(NTL.coeff(c, 123)))
+        end
+        record(io, "polynomial_mul_deg999", "GaloisFields.jl", "Polynomials.jl", "degree 999 inputs; random 7-bit prime set"; p=p) do
+            c = GPA * GPB
+            string(Polynomials.degree(c) + Integer(c[123]))
+        end
+        println("Random small-prime case p=", p, " complete")
     end
 
-    record(io, "zech_muladd", "NTL.jl", "Zech muladd", "10000 fused extension multiply-add steps; F_3^2") do
-        y = z
-        for _ in 1:10000
-            y = Base.muladd(y, z, one(y))
-        end
-        string(rep(y))
-    end
-    record(io, "zech_muladd", "GaloisFields.jl", "generic muladd", "10000 generic extension multiply-add steps; F_3^2") do
-        y = beta
-        for _ in 1:10000
-            y = Base.muladd(y, beta, one(y))
-        end
-        string(y)
-    end
-
-    record(io, "zech_inverse", "NTL.jl", "ZechElem", "10000 extension inversions; F_3^2") do
-        v = [inv(z) for _ in 1:10000]
-        string(rep(v[end]))
-    end
-    record(io, "zech_inverse", "GaloisFields.jl", "ExtensionField", "10000 extension inversions; F_3^2") do
-        v = [inv(beta) for _ in 1:10000]
-        string(v[end])
-    end
-    record(io, "zech_power", "NTL.jl", "ZechElem", "10000 extension powers; exponent=100; F_3^2") do
-        v = [z^100 for _ in 1:10000]
-        string(rep(v[end]))
-    end
-    record(io, "zech_power", "GaloisFields.jl", "ExtensionField", "10000 extension powers; exponent=100; F_3^2") do
-        v = [beta^100 for _ in 1:10000]
-        string(v[end])
-    end
-
-    GPA = Polynomial(G.(ac))
-    GPB = Polynomial(G.(bc))
-    record(io, "polynomial_mul_deg999", "NTL.jl", "ModPoly generalized FFT", "degree 999 inputs; p=101") do
-        c = pa * pb
-        string(NTL.degree(c) + rep(NTL.coeff(c, 123)))
-    end
-    record(io, "polynomial_mul_deg999", "GaloisFields.jl", "Polynomials.jl", "degree 999 inputs; p=101") do
-        c = GPA * GPB
-        string(Polynomials.degree(c) + Integer(c[123]))
-    end
 end
 println("Wrote ", OUTPUT)

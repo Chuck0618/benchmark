@@ -129,21 +129,23 @@ The primality row is normalized per call from the 200-call workload. The LLL row
 
 ## Package-level GaloisFields workloads
 
-These are the complete NTL.jl-versus-GaloisFields workload categories from the README, including fused muladd, Zech extension arithmetic, and degree-999 polynomial multiplication. Both packages are loaded in the same Julia process, with input construction excluded and 31 runs per workload.
+These are the complete NTL.jl-versus-GaloisFields workload categories from the README, including fused muladd, Zech extension arithmetic, and degree-999 polynomial multiplication. Both packages are loaded in the same Julia process, with input construction excluded and 31 runs per prime.
 
-| Operation | NTL.jl (ms) | GaloisFields (ms) |
-|---|---:|---:|
-| Prime-field mul/add x1e6, p=101 | 65.9643 | 70.8851 |
-| Prime-field fused muladd x1e6 | 9.9902 | 14.8994 |
-| Prime-field power x10000, p=101 | 0.4292 | 0.4265 |
-| Prime-field inverse x10000, p=101 | 0.2386 | 0.2314 |
-| Zech extension ops x10000 | 0.4849 | 0.6042 |
-| Zech muladd x10000 | 0.5573 | 0.6049 |
-| Zech inverse x10000 | 0.3790 | 0.4832 |
-| Zech power x10000 | 0.4209 | 0.3842 |
-| Polynomial multiplication, deg 999 | 0.3136 | 6.4466 |
+The former fixed p=101 comparison has been replaced by **eight random 7-bit primes**, used identically for both packages and every workload: `[67, 73, 83, 89, 97, 101, 107, 113]`. Zech tests use random quadratic extensions over these primes, with `p^2` below the current table limit. Each per-prime time is the median of 31 runs; the median columns below are taken across the eight per-prime medians.
 
-NTL.jl's Zech results are checked against ordinary extension-field arithmetic before timing. Display strings are not used as cross-package checksums for extension elements because the representations differ. Prime-field and polynomial results do have matching checksums.
+| Operation | NTL.jl median | GaloisFields median | NTL.jl min–max | GaloisFields min–max |
+|---|---:|---:|---:|---:|
+| Prime-field mul/add x1e6 | 69.2760 | 71.2422 | 62.9542–73.4098 | 68.8795–76.4092 |
+| Prime-field fused muladd x1e6 | 10.7357 | 15.0006 | 10.0032–11.1767 | 14.2623–16.8343 |
+| Prime-field power x10000 | 0.3870 | 0.4293 | 0.3764–0.4274 | 0.4234–0.5415 |
+| Prime-field inverse x10000 | 0.2384 | 0.2315 | 0.1614–0.2443 | 0.1389–0.2400 |
+| Zech extension ops x10000 | 0.4958 | 0.8573 | 0.4914–0.5295 | 0.8028–1.4651 |
+| Zech muladd x10000 | 0.6014 | 0.8584 | 0.5894–0.6656 | 0.8100–0.9019 |
+| Zech inverse x10000 | 0.3816 | 0.4565 | 0.3718–0.4753 | 0.4467–0.5124 |
+| Zech power x10000 | 0.4852 | 0.3799 | 0.4813–0.7756 | 0.3772–0.3843 |
+| Polynomial multiplication, deg 999 | 0.2839 | 6.5600 | 0.2759–0.2982 | 5.3571–7.9150 |
+
+All 40 directly comparable random-prime prime-field / polynomial checksum pairs match. Zech display strings are not compared across representations; instead, every NTL.jl Zech result is checked against ordinary extension-field arithmetic starting from the same element.
 
 ## Interpretation
 
