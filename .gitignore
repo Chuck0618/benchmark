@@ -1,2 +1,5 @@
 benchmark-random-prime
 benchmark-workloads
+
+validation/benchmark-cpp
+validation/workloads-cpp
