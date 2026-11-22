@@ -1,0 +1,10 @@
+workload,package,backend,ms,checksum,trials,note
+small_modmul,NTL.jl,PrimeField,5.060523,410346119,31,1e6 mul+add; input construction excluded
+big_modpow,NTL.jl,BigModRing,0.004992,2154208505148906360541873028424667532332439095099588942000930246186107460581814012045564532368251957705410866623609051518291969628164229865020686601975286003,31,p=2^521-1; exponent=1000000
+polynomial_mul,NTL.jl,ModPoly,0.066646,2026,31,degree 999 inputs; deterministic coefficients
+ntt_convolve,NTL.jl,radix-two NTT,0.573823,992302,31,4096 coefficients per input; linear convolution
+factorization,NTL.jl,Cantor-Zassenhaus,0.034693999999999996,5,31,fixed degree-7 factorization input; reconstruction checked outside timing
+determinant,NTL.jl,generic field fallback,0.014824,0,31,40x40; p=1000000007
+lll,NTL.jl,fast LLL + exact verification,0.20243,verified,31,12x12; includes exact post-verification
+lll_reduce_only,NTL.jl,fast LLL without exact verification,0.036342,exact-verification-disabled,31,12x12; verify=false; structural identities checked outside timing
+probprime,NTL.jl,deterministic Int witnesses,5.181464,200,31,200 calls; deterministic witnesses; p=2^61-1

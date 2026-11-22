@@ -1,14 +1,14 @@
-# NTL.jl Performance Report — 0.13.1
+# NTL.jl Performance Report — 0.13.2
 
 ## Scope and validation environment
 
-This report evaluates the uploaded optimization kit against the current NTL.jl baseline. It uses **NTL.jl 0.13.1**, **GaloisFields.jl 1.4**, and **C++ NTL 11.4.2** on the 2-core Intel Xeon Gold 6267C server with Julia 1.11.7. All measurements are single-threaded and run sequentially. Values are medians of 31 runs after warm-up unless otherwise stated; input construction is excluded.
+This report evaluates the uploaded optimization kit against the current NTL.jl baseline. It uses **NTL.jl 0.13.2**, **GaloisFields.jl 1.4**, and **C++ NTL 11.4.2** on the 2-core Intel Xeon Gold 6267C server with Julia 1.11.7. All measurements are single-threaded and run sequentially. Values are medians of 31 runs after warm-up unless otherwise stated; input construction is excluded.
 
 The C++ comparison therefore uses **11.4.2**, not the 11.5.1 version cited in the uploaded kit. Hardware and library versions are not mixed when interpreting the ratios.
 
 ### Correctness checks completed
 
-- Full NTL.jl test suite: **4,645,450 passing assertions**, including **1,987 new optimized-kernel assertions**.
+- Full NTL.jl test suite: **4,645,454 passing assertions**, including **1,987 new optimized-kernel assertions**.
 - All **14 package examples** passed on the optimized server build.
 - **306,588** additional small-modulus arithmetic and factorization checks passed, including exhaustive monic quartics over \(\mathbb F_2\) and \(\mathbb F_3\).
 - **112** filtered NTL.jl/C++ random-prime scalar groups match exactly.
@@ -16,36 +16,49 @@ The C++ comparison therefore uses **11.4.2**, not the 11.5.1 version cited in th
 - **40** directly comparable random-small-prime NTL.jl/GaloisFields checksum pairs match. Zech results are checked against ordinary extension-field arithmetic from the same element.
 - Independent BigInt expansion of the complete 200,000-step operand sequence agrees with both implementations.
 
-## Selective optimization in 0.13.1
+## Selective optimization in 0.13.2
 
 The new smallmod-factor proposal was reviewed independently rather than merged wholesale. Only the small-field factorization path and the typed hot-loop benchmark were retained. The small-residue multiplication patch was **not merged**, because it did not provide a stable speedup on this server.
 
-| Operation | C++ NTL (ms) | Baseline (ms) | Selective 0.13.1 (ms) | Optimized / C++ |
+| Operation | C++ NTL (ms) | Baseline (ms) | Selective 0.13.2 (ms) | Optimized / C++ |
 |---|---:|---:|---:|---:|
-| Small modular mul/add (typed hot loop) | 8.4581 | 67.8763 | 5.0682 | 0.60x |
-| BigInt modular exponentiation | 0.0130 | 0.0049 | 0.0047 | 0.37x |
-| Polynomial multiplication | 0.0660 | 0.0693 | 0.0666 | 1.01x |
-| NTT convolution | 0.6572 | 0.5898 | 0.5781 | 0.88x |
-| Polynomial factorization (degree 8) | 0.0250 | 0.0753 | 0.0253 | 1.01x |
-| Finite-field determinant | 0.0302 | 0.0148 | 0.0276 | 0.91x |
-| LLL (with exact verification) | 0.0702 | 0.1843 | 0.3235 | 4.61x |
-| LLL (reduction only) | 0.0694 | 0.0320 | 0.0560 | 0.81x |
-| Primality test (per call) | 0.0678 | 0.0262 | 0.0260 | 0.38x |
+| Small modular mul/add (typed hot loop) | 8.4581 | 67.8763 | 5.0605 | 0.60x |
+| BigInt modular exponentiation | 0.0130 | 0.0049 | 0.0047 | 0.36x |
+| Polynomial multiplication | 0.0660 | 0.0693 | 0.0677 | 1.03x |
+| NTT convolution | 0.6572 | 0.5898 | 0.5793 | 0.88x |
+| Polynomial factorization (degree 8) | 0.0250 | 0.0753 | 0.0261 | 1.05x |
+| Finite-field determinant | 0.0302 | 0.0148 | 0.0150 | 0.50x |
+| LLL (with exact verification) | 0.0702 | 0.1843 | 0.1786 | 2.55x |
+| LLL (reduction only) | 0.0694 | 0.0320 | 0.0283 | 0.41x |
+| Primality test (per call) | 0.0678 | 0.0262 | 0.0264 | 0.39x |
 
 The factorization input has total degree **8**; the older degree-7 label is only a compatibility label in the raw CSV. The specialized path is used only when `P <= 127` and `1 <= degree(f) <= 16`. All other inputs continue through generic Cantor–Zassenhaus factorization.
 
 A separate factor demo gives the following complementary measurements:
 
-| Input and RNG lifecycle | 0.13.0 baseline | Selective 0.13.1 |
+| Input and RNG lifecycle | 0.13.0 baseline | Selective 0.13.2 |
 |---|---:|---:|
-| Repository degree-8 input, fresh RNG each call | 67.969 µs | 26.047 µs |
-| Repository degree-8 input, prebuilt RNG | 36.450 µs | 8.622 µs |
-| `7(x+2)^5(x+3)^3`, fresh RNG | 25.314 µs | 23.185 µs |
-| `7(x+2)^5(x+3)^3`, prebuilt RNG | 6.563 µs | 5.286 µs |
-| Irreducible `x^2+2`, fresh RNG | 23.182 µs | 18.680 µs |
-| Irreducible `x^2+2`, prebuilt RNG | 5.088 µs | 0.883 µs |
+| Repository degree-8 input, fresh RNG each call | 67.969 µs | 27.061 µs |
+| Repository degree-8 input, prebuilt RNG | 36.450 µs | 8.998 µs |
+| `7(x+2)^5(x+3)^3`, fresh RNG | 25.314 µs | 23.336 µs |
+| `7(x+2)^5(x+3)^3`, prebuilt RNG | 6.563 µs | 5.665 µs |
+| Irreducible `x^2+2`, fresh RNG | 23.182 µs | 18.490 µs |
+| Irreducible `x^2+2`, prebuilt RNG | 5.088 µs | 0.891 µs |
 
 The factor demo's fresh-RNG baseline differs from the package-level baseline because the timing wrappers differ; these rows should be compared within the same wrapper rather than mixed with the other table.
+
+## Early-splitting threshold scan
+
+A new probe evaluates at most eight candidate roots and delegates to generic Cantor–Zassenhaus as soon as at least two are found. This keeps highly splitting inputs away from an exhaustive small-field scan without changing the factorization result.
+
+| Case | Specialized / generic before probe | Specialized / generic after probe |
+|---|---:|---:|
+| `p=31, d=4`, distinct linear factors | 2.667× | 0.994× |
+| `p=61, d=8`, distinct linear factors | 4.771× | 0.989× |
+| `p=101, d=12`, distinct linear factors | 4.687× | 0.951× |
+| `p=127, d=16`, distinct linear factors | 7.115× | 0.995× |
+
+Ratios below 1 indicate that the specialized path is faster. The original proposal's `P <= 127` and degree limit of 16 is retained, while the early probe supplies the missing worst-case guard. All other inputs retain their previous algorithms.
 
 ## Package-level C++ NTL comparison (0.13.0)
 
