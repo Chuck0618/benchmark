@@ -1,14 +1,14 @@
-# NTL.jl Performance Report — 0.13.3
+# NTL.jl Performance Report — 0.14.0
 
 ## Scope and validation environment
 
-This report evaluates the uploaded optimization kit against the current NTL.jl baseline. It uses **NTL.jl 0.13.3**, **GaloisFields.jl 1.4**, and **C++ NTL 11.4.2** on the 2-core Intel Xeon Gold 6267C server with Julia 1.11.7. All measurements are single-threaded and run sequentially. Values are medians of 31 runs after warm-up unless otherwise stated; input construction is excluded.
+This report evaluates the uploaded optimization kit against the current NTL.jl baseline. It uses **NTL.jl 0.14.0**, **GaloisFields.jl 1.4**, and **C++ NTL 11.4.2** on the 2-core Intel Xeon Gold 6267C server with Julia 1.11.7. All measurements are single-threaded and run sequentially. Values are medians of 31 runs after warm-up unless otherwise stated; input construction is excluded.
 
 The C++ comparison therefore uses **11.4.2**, not the 11.5.1 version cited in the uploaded kit. Hardware and library versions are not mixed when interpreting the ratios.
 
 ### Correctness checks completed
 
-- Full NTL.jl test suite: **4,645,990 passing assertions**, including **1,987 new optimized-kernel assertions**.
+- Full NTL.jl test suite: **4,648,706 passing assertions**, including **1,987 new optimized-kernel assertions**.
 - All **14 package examples** passed on the optimized server build.
 - **306,588** additional small-modulus arithmetic and factorization checks passed, including exhaustive monic quartics over \(\mathbb F_2\) and \(\mathbb F_3\).
 - **112** filtered NTL.jl/C++ random-prime scalar groups match exactly.
@@ -26,6 +26,26 @@ The LLL-exact kit was also reviewed independently. The optimized path keeps nati
 | Reduction only (`verify = false`) | 0.0406 ms | 0.0415 ms | 0.0694 ms |
 
 The default path is therefore about **1.86× faster** than the baseline, while the reduction-only row is essentially unchanged. This confirms that the main improvement lies in verification overhead rather than in the reduction algorithm itself. Native C++ `LLL(det2,B,U)` does not perform Julia's independent exact post-verification, so the default row is an end-to-end API-cost comparison rather than a same-layer algorithm benchmark. For the reduction layer, use `verify = false` versus native C++ LLL. The optional `cpp_checked.cpp` verifier is a separate custom checker and is not part of upstream C++ NTL timing. The new suite adds **536 exact-certificate assertions** and brings the complete test count to **4,645,990**.
+
+## Extended mathematical interfaces in 0.14.0
+
+The feature kit was merged after core and optional validation. It adds HNF, integer linear algebra, integer polynomial factorization, characteristic/minimal polynomials, Conway construction, isomorphism transport, primitive-element and logarithm interfaces, extension-field factorization, packed storage, BKZ, real arithmetic and real-root isolation, as well as caching and ordered parallel execution.
+
+| Workload | Time |
+|---|---:|
+| `charpoly` on a 2×2 matrix | 0.015 ms |
+| HNF on a 12×12 integer matrix | 1.620 ms |
+| Integer factorization of the degree-8 test polynomial | 9.014 ms |
+| The same factorization with Nemo/FLINT enabled | 0.076 ms |
+| GF2EX factorization | 0.453 ms |
+| ZZ_pEX factorization | 0.395 ms |
+| One generator-map conversion | 0.031 ms |
+| BKZ with block size 3 | 0.680 ms |
+| Real-root isolation for `(x-1)^2*(x^2-2)` | 1.901 ms |
+| Packed-vector read sum | 25.170 ms |
+| Ordinary-vector read sum | 8.641 ms |
+
+The optional FLINT factorization path was about **119× faster** than basic Kronecker interpolation for this input. HNF and the optional checks agree with FLINT, while the packed representation uses one-eighth of the ordinary payload but reconstructs values more slowly. `validation/feature-bench.csv` and `validation/feature-nemo-bench.txt` contain the raw measurements and the optional environment setup.
 
 ## Selective optimization in 0.13.2
 
@@ -212,7 +232,7 @@ These tables use the same two random primes per bit size and the same determinis
 
 ## Files and reproduction
 
-The `validation/` directory contains the optimized and baseline raw CSV files, C++ results, the kit comparison, and typed examples. `validation/smallmod-results/` additionally contains the selective-factor baseline, final, C++, scalar, and factor-demo results. The benchmark root also contains `benchmark.jl`, `benchmark.cpp`, `workloads.jl`, `workloads.cpp`, `workloads_ntl.jl`, and `generate_primes.jl` for independent replay.
+The `validation/` directory contains the optimized and baseline raw CSV files, C++ results, the kit comparison, typed examples, feature benchmarks, and optional FLINT measurements. `validation/smallmod-results/` additionally contains the selective-factor baseline, final, C++, scalar, and factor-demo results. The benchmark root also contains `benchmark.jl`, `benchmark.cpp`, `workloads.jl`, `workloads.cpp`, `workloads_ntl.jl`, and `generate_primes.jl` for independent replay.
 
 On the project server, run the kit's complete comparison with:
 
@@ -223,6 +243,17 @@ export NTL_INCLUDE_DIR=/home/jingdong/kimi/ntl-install/include
 export NTL_ARCHIVE=/home/jingdong/kimi/ntl-install/lib/libntl.a
 export GF2X_ARCHIVE=/home/jingdong/kimi/gf2x-install/lib/libgf2x.a
 bash run.sh /home/jingdong/kimi/NTLJulia   /home/jingdong/kimi/NTLJulia-opt-kit   /home/jingdong/kimi/ntl-benchmark   /home/jingdong/kimi/kit-results
+```
+
+Run the feature benchmark and optional FLINT replay with:
+
+```bash
+/home/jingdong/kimi/julia-1.11.7/bin/julia --project=NTL-feature/NTL.jl feature_bench.jl /home/jingdong/kimi/ntl-benchmark/feature-bench.csv
+
+JULIA_DEPOT_PATH=/home/jingdong/kimi/.julia \
+JULIA_LOAD_PATH=/home/jingdong/kimi/ntl-optional-env \
+/home/jingdong/kimi/julia-1.11.7/bin/julia --project=/home/jingdong/kimi/ntl-optional-env \
+  /home/jingdong/kimi/ntl-benchmark/feature_nemo_bench.jl
 ```
 
 Run the package tests and independent replay with:
